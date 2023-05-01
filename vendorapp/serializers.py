@@ -45,3 +45,6 @@ class VendorLoginSerializer(serializers.Serializer):
 
     #     data["vendor"] = vendor
         # return data   
+        
+        
+        

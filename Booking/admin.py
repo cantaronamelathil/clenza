@@ -5,6 +5,14 @@ from .models import *
 # admin.site.register(Appointment)
 
 class AppointmentAdmin(admin.ModelAdmin):
-    fields = ['user', 'date', 'slot']
+    readonly_fields=('id',)
+    # fields = ['user', 'date', 'slot']
+class DispatchAdmin(admin.ModelAdmin):
+    readonly_fields=('id',)  
+    
 
 admin.site.register(Appointment, AppointmentAdmin)
+
+admin.site.register(DispatchBooking,DispatchAdmin)
+
+admin.site.register(ClothOrder)

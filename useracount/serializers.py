@@ -16,14 +16,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validate_data):
         return Accounts.objects.create_user(**validate_data)
      
-
+   
 class UserLoginSerializer(serializers.ModelSerializer):
     email= serializers.EmailField(max_length=255)
     class Meta:
         model=Accounts
         fields = ['email','password']
+        
+        
+        def validate_password(self, value):
+            if not value:
+                raise serializers.ValidationError(_("msgInvalidpassword"))    
+
 
 class UserprofileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Accounts
-        fields = ['id', 'email','phone_number']     
+        fields = ['id', 'email','role']     

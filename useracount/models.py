@@ -58,6 +58,7 @@ class Accounts(AbstractBaseUser):
         ADMIN ="ADMIN","Admin"
         CUSTOMER ="CUSTOMER","Customer"
         VENDOR = "VENDOR","Vendor"
+        WORKER = "WORKER","worker"
     
     base_role = Roles.ADMIN
     
@@ -67,7 +68,7 @@ class Accounts(AbstractBaseUser):
     last_name   = models.CharField(max_length=50, null=True,blank=True)
     role        = models.CharField(max_length=50,choices=Roles.choices)
     username    = models.CharField(max_length=50, unique=True)
-    email       = models.CharField(max_length=100, unique=True)
+    email       = models.EmailField(max_length=100, unique=True,blank=True, null=True, db_column='email')
     phone_number = models.CharField(max_length=50, null=True,blank=True)
     picture = models.ImageField(blank=True, null=True)
 
@@ -97,7 +98,7 @@ class Accounts(AbstractBaseUser):
     def __str__(self):
         return self.email 
 
-
+    
     def has_perm(self,perm,obj=None):
         return self.is_admin 
 
