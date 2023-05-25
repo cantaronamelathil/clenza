@@ -177,5 +177,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:9000",
 ]
-RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
-RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
+RAZORPAY_KEY_ID = 'rzp_test_joYxwjB3Oa72hO'
+RAZORPAY_KEY_SECRET = 'WlqG0KCiVbiljnzY5SUPqrPw'
