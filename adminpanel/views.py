@@ -1,3 +1,4 @@
+
 from django.shortcuts import render
 
 from rest_framework.permissions import IsAuthenticated
@@ -10,15 +11,19 @@ from rest_framework.response import Response
 from worker.serializers import ClothOrderSerializer
 from Booking.models import Appointment
 from Booking.serializers import AppointmentSerializer
+from .serializers import AdminAppointmentsSerializer,ClothOrderSerializer
+
 class ClothOrderViewasAdmin(APIView):
-    permission_classes = [IsAuthenticated,Is_Admin]
+    permission_classes = [IsAuthenticated, Is_Admin]
     
-    def put(self,request,pk,format=None):
+    def put(self, request, booking_number, format=None):
         try:
-            cloth_order  = ClothOrder.objects.gets(pk=pk)
-        
+            appointment = Appointment.objects.get(booking_number=booking_number)
+            cloth_order = ClothOrder.objects.get(appointment=appointment)
+        except Appointment.DoesNotExist:
+            return Response({'status': 'Appointment not found.'}, status=status.HTTP_404_NOT_FOUND)
         except ClothOrder.DoesNotExist:
-            return Response({'status':'Order not found.'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'status': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
     
         if cloth_order.order_status == 'Unassigned':
             cloth_order.order_status = "Accepted" 
@@ -30,10 +35,15 @@ class ClothOrderViewasAdmin(APIView):
 
 class  AdminClothOrderView(APIView):
     permission_classes =[IsAuthenticated,Is_Admin]
-    def get(self,reuest,pk,format=None):
-        appointments=Appointment.objects.filter(pk=pk)
-        print(appointments)
-        serializer=AppointmentSerializer(appointments,many=True)
-        
+   
+    def get(self, request, date):
+        appointments = Appointment.objects.filter(date=date)
+        serializer = AdminAppointmentsSerializer(appointments,many=True)
+        result = []
+        for item in appointments:
+            clothorder = ClothOrder.objects.get(appointment=item)
+            clothserializer = ClothOrderSerializer(clothorder,many=False)
+            result.append(clothserializer.data)
+        for item in range(len(serializer.data)):
+            serializer.data[item]['order_status'] = result[item]['order_status']
         return Response(serializer.data)
-

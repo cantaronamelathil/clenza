@@ -24,7 +24,7 @@ class Appointment(models.Model):
     slot = models.IntegerField(choices=TIMESLOT_LIST)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     cloth_no= models.IntegerField(blank=True,null=True)
-    booking_number = models.CharField(max_length=100,blank=True)
+    booking_number = models.CharField(max_length=100,blank=True,unique=True)
     @property
     def cost(self):
         return self.cloth_no * 30
@@ -58,6 +58,7 @@ class DispatchBooking(models.Model):
     dispatchdate = models.DateField()
     slot = models.IntegerField(choices=TIMESLOT_LIST,blank=True,null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    appointment=models.ForeignKey(Appointment, on_delete=models.CASCADE,null=True,blank=True, related_name='appointments')
     created_at = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
     payment_id = models.CharField(max_length=255, blank=True, null=True)
@@ -65,6 +66,12 @@ class DispatchBooking(models.Model):
     refund = models.BooleanField(default=False)
     canceled = models.BooleanField(default=False)
     
+    
+    
+    # def save(self, *args, **kwargs):
+    #     if self.appointment:
+    #         self.booking_number = self.appointment.booking_number
+    #     super().save(*args, **kwargs)
     # @property
     # def booked_slot(self):
     #     return self.TIMESLOT_LIST[self.slot][1]
@@ -80,6 +87,7 @@ class ClothOrder(models.Model):
     order_status = models.CharField(max_length=20,choices=order_status,default='Unassigned')
     dispatch = models.ForeignKey(DispatchBooking,null=True,blank=True,on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,null=True)
+    booking_number = models.CharField(max_length=100,blank=True,null=True)
     # dispatch_date = serializers.SerializerMethodField()
 
     # def get_dispatch_date(self, obj):

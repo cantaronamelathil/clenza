@@ -10,8 +10,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics, permissions
 from rest_framework.permissions import IsAuthenticated
 from .serializers import UserRegistrationSerializer, UserLoginSerializer,UserprofileSerializer
-from Booking.models import  ClothOrder,DispatchBooking
+from Booking.models import  ClothOrder,DispatchBooking,Appointment
 from Booking.serializers import Clothserializer
+from useracount.models import Accounts
+
 # Create your views here.
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -38,6 +40,8 @@ class UserLogin(APIView):
 
     def post(self, request , format=None):
         serializer = UserLoginSerializer(data= request.data)
+        # if not user:
+        #     print("Authentication failed: " + str(authenticate.errors))
         if serializer.is_valid(raise_exception = True):
             email = serializer.data.get('email')
             # print(email)
@@ -45,6 +49,8 @@ class UserLogin(APIView):
             # print(password)
             user = authenticate(email=email,password=password)
             # print(user)
+            # if not user:
+            #     print("Authentication failed: " + str(authenticate.errors))
             if user:
                 # return Response({'msg':'Login Success'},status=status.HTTP_200_OK)
                 if user.role=="CUSTOMER":
@@ -98,13 +104,32 @@ class LogoutView(APIView):
 
 
 
-class ClothOrderView(APIView):
+class UserClothOrderView(APIView):
+    
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, format=None):
-        user = request.user
-        print(user)
-        clothorder = ClothOrder.objects.filter(user=user)
-        print(clothorder)
-        dispatch_dates = DispatchBooking.objects.values_list('dispatchdate', flat=True)
-        print(dispatch_dates)
-        serializer = Clothserializer(clothorder, many=True, context={'dispatch_dates': dispatch_dates})
-        return Response(serializer.data)
+        user = Accounts.objects.get(email = request.user)
+        try:
+            booking_object = Appointment.objects.get(user=user)
+        except Appointment.DoesNotExist:
+            return Response({'error':'User not valid'})
+        else:
+            try:
+                dispatch_object = DispatchBooking.objects.get(user=user)
+            except DispatchBooking.DoesNotExist:
+                result = {
+                    'booking_date':booking_object.date,
+                    'booking_number':booking_object.booking_number,
+                    'message':'dispatch is not complete'
+                }
+                return Response(result)
+            else:
+                result = {
+                    'booking_date':booking_object.date,
+                    'booking_number':booking_object.booking_number,
+                    'cloth_number':booking_object.cloth_no,
+                    'dispatch_date':dispatch_object.dispatchdate,
+                    'dispatch_slot':dispatch_object.slot,
+                }
+                return Response(result)

@@ -12,6 +12,8 @@ from django.conf import settings
 from datetime import datetime, timedelta,date
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
+# from datetime import date
+from django.utils import timezone
 class AppointmentView(APIView):
     
     def get(self,request,format=None):
@@ -39,25 +41,34 @@ class AppointmentView(APIView):
             print(booking_no)
             # serializer. booking_number 
             # appointment.booking_number = booking_number
-            print()
-        #     appointment.save()
+            if serializers.check(user=request.user):
+                return Response({'the slot is already booked'})
+            
             appointment=serializers.save(user=request.user, booking_number= booking_number)
             # booking = Appointment.objects.create(timeslot=timeslot,user=request.user,date=date)
-           
-            print(appointment.id)  
+            
             ClothOrder.objects.create(user=request.user,appointment=appointment)
-            return Response(serializers.data, status=status.HTTP_201_CREATED)
+
+
+
+            return Response(serializers.data,status=status.HTTP_201_CREATED)
         return  Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
     # hour must be after start hour!'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #   
     
     
 class AvailableTimeSlots(APIView):
     
     def get(self,request,date,format=None):
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+        today = timezone.now().date()
+        if date_obj == today:
+            return Response({'message': 'Booking not possible on today\'s date'})
+        elif date_obj < today:
+            return Response({'message': 'Booking not possible on past date'})
+        
         existing_appointments = Appointment.objects.filter(date=date)
         print(existing_appointments)
+       
         available_slots = [i for i in range(9)]
         print(available_slots)
         for appointment in existing_appointments:
@@ -71,21 +82,23 @@ class AvailableTimeSlots(APIView):
     
 class DispatchView(APIView):
     
-    def get(self,request,id,format=None):
+    def get(self,request,booking_number,format=None):
         # Calculate the date for dispatch, which is one week from the date of collection
-        appointment=Appointment.objects.get(id=id)
+        appointment=Appointment.objects.get(booking_number=booking_number)
         date=str(appointment.date)
         user=appointment.user
         print(date)
         dispatch_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=7)
         print(dispatch_date)
-        dispatch= DispatchBooking.objects.create(dispatchdate=dispatch_date,user=user)
+        dispatch= DispatchBooking.objects.get_or_create(dispatchdate=dispatch_date,user=user,appointment=appointment)
         
         # Create a list of available time slots for the dispatch date
-        existing_appointments = Appointment.objects.filter(date=dispatch_date)
+        existing_appointments = DispatchBooking.objects.filter(dispatchdate=dispatch_date)
+        print(existing_appointments)
         available_slots = [i for i in range(9)]
-        for appointment in existing_appointments:
-            available_slots.remove(appointment.slot)
+        for item in existing_appointments:
+            if item.slot:
+                available_slots.remove(item.slot)
         
         # Create a response with the dispatch date and available time slots
         response_data = {
@@ -93,58 +106,86 @@ class DispatchView(APIView):
             'available_slots': available_slots,
         }
         return Response(response_data)    
-    
-    def put(self, request,id,format=None):
+
+    def put(self, request,booking_number,format=None):
+        print("hi")
         # breakpoint()
         # Create a new dispatch instance and save it
-        appointment_id = request.data["appoinment_id"]
-        dispatched= DispatchBooking.objects.get(id=id)
-        slot = dispatched.slot
+        # print(request)
+        # appointment_id = request.data["appoinment_id"]
+        try:
+            appointment=Appointment.objects.get(booking_number=booking_number)
+        except Exception:
+            return Response({'something'})
+        print(appointment)
+        try:
+            dispatch=DispatchBooking.objects.get(appointment__booking_number=booking_number)
+        except DispatchBooking.DoesNotExist:
+            return Response({'message':'booking_number is not valid'})
+        except DispatchBooking.MultipleObjectsReturned:
+            return Response({'message':'already selected'})
+        else:
+            print(dispatch)
+        # breakpoint()
+        # dispatched= DispatchBooking.objects.get(id=id)
         
-        print(dispatched)
+        # slot = dispatched.slot
         
-        serializer = DispatchSerializer(dispatched,data=request.data) 
-        if serializer.is_valid():
+        
+        # print(dispatched)
+        
+        if dispatch.order_id:
+            return Response({"message":'already slot selected'})
+        
+        serializer = DispatchSerializer(dispatch,data=request.data)
+        if serializer.is_valid(raise_exception=True):
             # clothorder = ClothOrder.objects.get(slot=serializer.slot,user=request.user)
-            slot =serializer.validated_data["slot"]
+                slot =serializer.validated_data["slot"]
             # user = serializer.validated_data["user"]
-            serializer.save()
-            print(slot)
-            print(serializer.data["user"])
-            user=serializer.data["user"]
+                serializer.save()
+                print(slot)
+                print(serializer.data["user"])
+                user=serializer.data["user"]
             
-            appointment = Appointment.objects.get(id=appointment_id)
-            print(appointment)
-            dispatched= DispatchBooking.objects.get(id=id)
-            clothorder = ClothOrder.objects.get(appointment=appointment)
-            print(clothorder.dispatch)
-            print(appointment)
-            clothorder.dispatch=dispatched
-            razorpay_client = razorpay.Client(
-                auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-            )
-            amount = appointment.cost * 100
-            order_data = {
-                'amount':amount,
-                'currency':'INR',
-                'payment_capture' : 1
-            }
-            order = razorpay_client.order.create(order_data)
-            print(f" the cost is {appointment.cost}")
+                # appointment = Appointment.objects.get(id=appointment_id)
+                print(appointment)
+                # dispatched= DispatchBooking.objects.get(id=id)
+                clothorder = ClothOrder.objects.get(appointment=appointment)
+                print(clothorder.dispatch)
+                print(appointment)
+                clothorder.dispatch=dispatch
+        
+                 
+                razorpay_client = razorpay.Client(
+                    auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+                )
+                amount = appointment.cost * 100
+                order_data = {
+                    'amount':amount,
+                    'currency':'INR',
+                    'payment_capture' : 1
+                }
+                request.session['order_data'] = order_data
+                print(request.session['order_data'])
+                order = razorpay_client.order.create(order_data)
+                print(f" the cost is {appointment.cost}")
             # breakpoint()
-            dispatched.order_id = order['id']
-            dispatched.save()
-            clothorder.save()
-            resp = {
-                "serializer.data":serializer.data,
-                "order_id" : order["id"]
-            }
+                dispatch.order_id = order['id']
+                dispatch.save()
+                clothorder.save()
+                resp = {
+                    "serializer.data":serializer.data,
+                    "order_id" : order["id"]
+                }
             
-            return Response(resp, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(resp, status=status.HTTP_201_CREATED)
+        return Response('''serializer.errors''', status=status.HTTP_400_BAD_REQUEST)
     
     
-    
+        # appointment = Appointment.objects.get(booking_number=booking_number)
+        # slot = request.data.get('slot')
+
+     
     
     
 class PaymentverifyAPIViews(APIView):
@@ -156,14 +197,15 @@ class PaymentverifyAPIViews(APIView):
         order_id= request.data.get('order_id')
         payment_id= request.data.get('payment_id')
         payment_signature=request.data.get('payment_signature')
-        
+        print(order_id,payment_id,payment_signature)
         try:
             dispatch=DispatchBooking.objects.get(order_id=order_id)
         except DispatchBooking.DoesNotExist:
-            raise ValidationError('Invalid dispatch ID')  
+            raise ValidationError('Invalid dispatch ID')
         
         razorpay_client = razorpay.Client(auth=(str(settings.RAZORPAY_KEY_ID),str(settings.RAZORPAY_KEY_SECRET)))
         # order_id = DispatchBooking.order_id
+        
         
         
         context = {
@@ -177,13 +219,15 @@ class PaymentverifyAPIViews(APIView):
         except Exception as e:
             raise ValidationError(str(e))
              # Mark the dispatch as paid and send a confirmation to the user
-        dispatch.payment_id = 'payment_id'
+        dispatch.payment_id = payment_id
         dispatch.paid = True
         dispatch.save()
         # dispatch.slot.booked_tokens +=1
         # dispatch.slot.save()
-
-        return Response({'status': 'success'})
+        print(request.session.get('order_data'))
+        order_details = request.session.get('order_data')
+        del order_details['payment_capture']
+        return Response({'status': 'success','amount':order_details})
  
 
 

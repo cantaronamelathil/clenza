@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Booking.models import ClothOrder
+from Booking.models import ClothOrder,Appointment
 from useracount.models import Accounts
 
 class ClothOrderSerializer(serializers.ModelSerializer):
@@ -14,3 +14,10 @@ class WorkerprofileSerializer(serializers.ModelSerializer):
         
         model = Accounts
         fields = ['id','email']                
+        
+        
+        
+class workerAppointmentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ('booking_number', 'cloth_no')        

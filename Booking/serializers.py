@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from datetime import date
 from .models import Appointment
+from useracount.models import Accounts
 class AppointmentSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
     cloth_no = serializers.IntegerField(required=True )
@@ -20,8 +21,35 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if value < date.today():
             raise serializers.ValidationError("Appointment date cannot be in the past.")
         return value  
-      
-      
+    
+
+
+    # def save(self, **kwargs):
+    #     appoiment_object = Appointment.objects.get_or_create(
+    #     date=self.data.get('date'),
+    #     slot=self.data.get('slot'),
+    #     cloth_no=self.data.get('cloth_no'),
+    #     )
+    #     appoiment_object[0].user =kwargs.get('user')
+    #     appoiment_object[0].booking_number = kwargs.get('booking_number')
+    #     appoiment_object[0].save()
+    #     return [appoiment_object[0], appoiment_object[0].user]
+    
+
+    def check(self, **kwargs):
+        user = Accounts.objects.get(email=kwargs.get('user'))
+        print(type(user))
+        print(self.validated_data.get('date'))
+        
+        try:
+            appointment = Appointment.objects.get(date=self.validated_data.get('date'))
+            
+        except Exception:
+            return False
+        else:
+            print(appointment,type(appointment))
+            return True
+        
         
     def validate(self, data):
         # Check if the time slot is available for the given date
@@ -83,6 +111,7 @@ class DispatchSerializer(serializers.ModelSerializer):
         fields = ['slot','user','dispatchdate']
         
     
+  
     
     # def update(self, instance, validated_data):
     #     # breakpoint()

@@ -6,10 +6,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from .permissions import permissions
 from rest_framework.permissions import IsAuthenticated,AllowAny
+from Booking.models import Appointment
 # from .permissions import Is_WORKER # Import the custom permission class
 from Booking.models import ClothOrder
-from .serializers import ClothOrderSerializer,WorkerprofileSerializer
+from .serializers import ClothOrderSerializer,WorkerprofileSerializer,workerAppointmentsSerializer
 from .permissions import Is_Worker
+import datetime
+
+
 
 class WorkerprofileView(APIView):
     permission_classes = [IsAuthenticated] 
@@ -21,10 +25,11 @@ class WorkerprofileView(APIView):
 class ClothOrderUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated,Is_Worker]
 
-    def put(self, request, pk, format=None):
+    def put(self, request, *args, **kwargs):
         try:
-            cloth_order = ClothOrder.objects.get(pk=pk)
-           
+            appointment = Appointment.objects.get(booking_number=kwargs.get('bookingnumber'))
+            cloth_order = ClothOrder.objects.get(appointment=appointment)
+            print(cloth_order)
         except ClothOrder.DoesNotExist:
             return Response({'status': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -41,3 +46,13 @@ class ClothOrderUpdateAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
         # return Response({'status': 'Order status cannot be updated.'},status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
+class  workerClothOrderView(APIView):
+    permission_classes =[IsAuthenticated,Is_Worker]
+   
+    def get(self, request):
+        appointments = Appointment.objects.filter(date=datetime.datetime.now())
+        serializer = workerAppointmentsSerializer(appointments,many=True)
+        return Response(serializer.data)

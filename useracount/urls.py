@@ -13,6 +13,6 @@ urlpatterns=[
     path('profile/', views.ProfileView.as_view()),
     # path('workerprofile',views.WorkerprofileView.as_view()),
     path('logout/',views.LogoutView.as_view()),
-    path('ClothOrderView/',views.ClothOrderView.as_view()),
+    path('clothOrderview/',views.UserClothOrderView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     ]
