@@ -101,6 +101,37 @@ class AvailableTimeSlotsSerializer(serializers.ModelSerializer):
         # all_slots = [i for i in range(9)]
         available_slots = [f"Slot {data[0]}: {data[1]}" for data in self.TIMESLOT_LIST if data[0] not in taken_slots]
         return available_slots
+    
+    
+        
+
+# class DispatchAvailableTimeSlotsSerializer(serializers.ReadOnlyField):
+#     TIMESLOT_LIST = (
+#         (0, '09:00 - 09:30 AM'),
+#         (1, '10:00 - 10:30 AM'),
+#         (2, '11:00 - 11:30 AM'), 
+#         (3, '12:00 - 12:30 PM'),
+#         (4, '01:00 - 01:30 PM'),
+#         (5, '14:00 - 14:30 PM'),
+#         (6, '15:00 - 15:30 PM'),
+#         (7, '16:00 - 16:30 PM'),
+#         (8, '17:00 - 17:30 PM'),
+#     )
+    
+#     available_slots = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = DispatchBooking
+#         fields = ['dispatchdate', 'available_slots']
+        
+#     def get_available_slots(self, obj):
+#         # breakpoint()
+#         taken_slots = DispatchBooking.objects.filter(date=obj.get("dispatchdate")).values_list('slot', flat=True)
+#         # all_slots = [i for i in range(9)]
+#         available_slots = [f"Slot {data[0]}: {data[1]}" for data in self.TIMESLOT_LIST if data[0] not in taken_slots]
+#         return available_slots
+    
+
   
     
 class DispatchSerializer(serializers.ModelSerializer):

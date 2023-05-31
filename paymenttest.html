@@ -31,13 +31,13 @@
         var my_order_id = "{{order.order_number}}"
     var options = {
         "redirect_url" : "{% url 'order_complete' %}", 
-        "key": "rzp_test_5Q93n2nTVu2KaZ", // Enter the Key ID generated from the Dashboard
+        "key": "rzp_test_joYxwjB3Oa72hO", // Enter the Key ID generated from the Dashboard
         "amount": 50000, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
         "currency": "INR",
         "name": "Clenza",
         "description": "Test Transaction",
         "image": "https://example.com/your_logo",
-        "order_id": "order_Lw8nFjMD7v49nM", //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+        "order_id": "order_LwGixrYxq1lbYj", //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
         "handler": function (response){
             
             // return fetch("http://127.0.0.1:8000/booking/verifypayment", {

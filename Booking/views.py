@@ -3,7 +3,7 @@ from rest_framework import generics
 from rest_framework.views import APIView
 # Create your views here.
 from rest_framework.response import Response
-from .serializers import AppointmentSerializer,AvailableTimeSlotsSerializer,DispatchSerializer,SlotCancellationSerializer 
+from .serializers import AppointmentSerializer,AvailableTimeSlotsSerializer,DispatchSerializer,SlotCancellationSerializer
 from .models import Appointment,DispatchBooking,ClothOrder
 from rest_framework import status
 import razorpay
@@ -27,7 +27,7 @@ class AppointmentView(APIView):
         
         serializers= AppointmentSerializer(data=request.data,context={
         'request': request}) 
-        if serializers.is_valid ():
+        if serializers.is_valid (raise_exception=True):
             yr = int(date.today().strftime('%Y'))
             dt = int(date.today().strftime('%d'))
             mt = int(date.today().strftime('%m'))
@@ -75,6 +75,7 @@ class AvailableTimeSlots(APIView):
             print(appointment)
             available_slots.remove(appointment.slot)
         print(available_slots)
+        print(date,type(date))
         serializer = AvailableTimeSlotsSerializer({'date': date, 'available_slots': available_slots,})
         return Response(serializer.data)
     
@@ -89,7 +90,8 @@ class DispatchView(APIView):
         user=appointment.user
         print(date)
         dispatch_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=7)
-        print(dispatch_date)
+        dispatch_date1 = dispatch_date.strftime('%Y-%m-%d')
+        print(dispatch_date1,type(dispatch_date1))
         dispatch= DispatchBooking.objects.get_or_create(dispatchdate=dispatch_date,user=user,appointment=appointment)
         
         # Create a list of available time slots for the dispatch date
@@ -99,6 +101,7 @@ class DispatchView(APIView):
         for item in existing_appointments:
             if item.slot:
                 available_slots.remove(item.slot)
+    
         
         # Create a response with the dispatch date and available time slots
         response_data = {
@@ -106,6 +109,7 @@ class DispatchView(APIView):
             'available_slots': available_slots,
         }
         return Response(response_data)    
+
 
     def put(self, request,booking_number,format=None):
         print("hi")
@@ -224,8 +228,8 @@ class PaymentverifyAPIViews(APIView):
         dispatch.save()
         # dispatch.slot.booked_tokens +=1
         # dispatch.slot.save()
-        print(request.session.get('order_data'))
         order_details = request.session.get('order_data')
+        order_details['amount'] = order_details['amount'] // 100
         del order_details['payment_capture']
         return Response({'status': 'success','amount':order_details})
  

@@ -74,6 +74,7 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
+        
         serializer= UserprofileSerializer(request.user)
         print(request.user)
         return Response(serializer.data)
@@ -81,6 +82,7 @@ class ProfileView(APIView):
 class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get('refresh_token')
+        print(type(refresh_token))
         if refresh_token:
             try:
                 token = RefreshToken(refresh_token)
@@ -110,26 +112,90 @@ class UserClothOrderView(APIView):
     
     def get(self, request, format=None):
         user = Accounts.objects.get(email = request.user)
-        try:
-            booking_object = Appointment.objects.get(user=user)
-        except Appointment.DoesNotExist:
-            return Response({'error':'User not valid'})
+        booking_object = Appointment.objects.filter(user=user)
+        if not booking_object:
+            return Response('error')
         else:
-            try:
-                dispatch_object = DispatchBooking.objects.get(user=user)
-            except DispatchBooking.DoesNotExist:
-                result = {
-                    'booking_date':booking_object.date,
-                    'booking_number':booking_object.booking_number,
+            result = []
+            for item in booking_object:
+                try:
+                    dispatch_object = DispatchBooking.objects.get(user=user,appointment=item)
+                except Exception as e:
+                    result.append({
+                    'booking_date':item.date,
+                    'booking_number':item.booking_number,
                     'message':'dispatch is not complete'
-                }
-                return Response(result)
-            else:
-                result = {
-                    'booking_date':booking_object.date,
-                    'booking_number':booking_object.booking_number,
-                    'cloth_number':booking_object.cloth_no,
+                    })
+                    return Response(result)
+                else:
+                    result.append({
+                    'booking_date':item.date,
+                    'booking_number':item.booking_number,
+                    'cloth_number':item.cloth_no,
                     'dispatch_date':dispatch_object.dispatchdate,
                     'dispatch_slot':dispatch_object.slot,
-                }
-                return Response(result)
+                    })
+            return Response(result)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            # if not dispatch_object:
+            #     result = []
+            #     for item in booking_object:
+            #         result.append(
+            #             {
+            #         'booking_date':item.date,
+            #         'booking_number':item.booking_number,
+            #         'message':'dispatch is not complete'}
+            #         )
+            #     return Response(result)
+            # else:
+            #     result = []
+            #     for item in booking_object:
+            #         result.append(
+            #             {
+            #         'booking_date':booking_object.date,
+            #         'booking_number':booking_object.booking_number,
+            #         'cloth_number':booking_object.cloth_no,
+            #         'dispatch_date':dispatch_object.dispatchdate,
+            #         'dispatch_slot':dispatch_object.slot,
+            #         }
+            #         )
+            #     return Response(result)
+        
+        
+        
+        
+        
+        
+        
+            # try:
+            #     dispatch_object = DispatchBooking.objects.get(user=user)
+            # except DispatchBooking.DoesNotExist:
+            #     result = {
+            #         'booking_date':booking_object.date,
+            #         'booking_number':booking_object.booking_number,
+            #         'message':'dispatch is not complete'
+            #     }
+            #     return Response(result)
+            # else:
+            #     result = {
+            #         'booking_date':booking_object.date,
+            #         'booking_number':booking_object.booking_number,
+            #         'cloth_number':booking_object.cloth_no,
+            #         'dispatch_date':dispatch_object.dispatchdate,
+            #         'dispatch_slot':dispatch_object.slot,
+            #     }
+            #     return Response(result)
+            
